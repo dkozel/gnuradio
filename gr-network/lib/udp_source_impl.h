@@ -27,6 +27,7 @@ protected:
     bool is_ipv6;
     size_t d_itemsize;
     size_t d_veclen;
+    std::string d_address;
     int d_port;
 
     bool d_notify_missed;
@@ -61,6 +62,7 @@ protected:
 public:
     udp_source_impl(size_t itemsize,
                     size_t veclen,
+                    const std::string& address,
                     int port,
                     int header_type,
                     int payloadsize,

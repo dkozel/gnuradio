@@ -17,5 +17,6 @@ install(FILES
     udp_header_types.h
     udp_sink.h
     udp_source.h
+    multicast_source.h
     DESTINATION ${GR_INCLUDE_DIR}/gnuradio/network
 )

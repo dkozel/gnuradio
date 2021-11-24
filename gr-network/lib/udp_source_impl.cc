@@ -22,6 +22,7 @@ namespace network {
 
 udp_source::sptr udp_source::make(size_t itemsize,
                                   size_t veclen,
+                                  std::string& address,
                                   int port,
                                   int header_type,
                                   int payloadsize,
@@ -31,6 +32,7 @@ udp_source::sptr udp_source::make(size_t itemsize,
 {
     return gnuradio::make_block_sptr<udp_source_impl>(itemsize,
                                                       veclen,
+                                                      address,
                                                       port,
                                                       header_type,
                                                       payloadsize,
@@ -44,6 +46,7 @@ udp_source::sptr udp_source::make(size_t itemsize,
  */
 udp_source_impl::udp_source_impl(size_t itemsize,
                                  size_t veclen,
+                                 const std::string address,
                                  int port,
                                  int header_type,
                                  int payloadsize,
@@ -56,6 +59,7 @@ udp_source_impl::udp_source_impl(size_t itemsize,
       is_ipv6(ipv6),
       d_itemsize(itemsize),
       d_veclen(veclen),
+      d_address(address),
       d_port(port),
       d_notify_missed(notify_missed),
       d_source_zeros(source_zeros),
@@ -118,10 +122,17 @@ udp_source_impl::udp_source_impl(size_t itemsize,
 
     d_localqueue = new boost::circular_buffer<char>(max_circ_buffer);
 
-    if (is_ipv6)
-        d_endpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v6(), port);
-    else
-        d_endpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port);
+
+    if (!d_address.empty()) {
+        d_endpoint = boost::asio::ip::udp::endpoint(
+                boost::asio::ip::address::from_string(d_address),
+                port);
+    } else {
+        if (is_ipv6)
+            d_endpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v6(), port);
+        else
+            d_endpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port);
+    }
 
     try {
         d_udpsocket = new boost::asio::ip::udp::socket(d_io_service, d_endpoint);

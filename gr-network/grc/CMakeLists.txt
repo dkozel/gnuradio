@@ -13,5 +13,6 @@ install(FILES
     network_tuntap_pdu.block.yml
     network_udp_sink.block.yml
     network_udp_source.block.yml
+    network_multicast_source.block.yml
     DESTINATION share/gnuradio/grc/blocks
 )

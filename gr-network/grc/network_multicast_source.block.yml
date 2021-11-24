@@ -1,0 +1,45 @@
+id: network_multicast_source
+label: Multicast Source
+category: '[Core]/Networking Tools'
+
+parameters:
+-   id: type
+    label: Output Type
+    dtype: enum
+    options: [complex, float, int, short, byte]
+    option_attributes:
+        size: [gr.sizeof_gr_complex, gr.sizeof_float, gr.sizeof_int, gr.sizeof_short,
+            gr.sizeof_char]
+    hide: part
+-   id: addr
+    label: Address
+    dtype: string
+    default: 127.0.0.1
+-   id: port
+    label: Port
+    dtype: int
+    default: '2000'
+-   id: server
+    label: Mode
+    dtype: enum
+    default: 'True'
+    options: ['True', 'False']
+    option_labels: [Server, Client]
+-   id: vlen
+    label: Vector Length
+    dtype: int
+    default: '1'
+    hide: ${ 'part' if vlen == 1 else 'none' }
+
+outputs:
+-   domain: stream
+    dtype: ${ type }
+    vlen: ${ vlen }
+asserts:
+- ${ vlen > 0 }
+
+templates:
+    imports: from gnuradio import network
+    make: network.multicast_source.multicast_source(itemsize=${type.size}*${vlen},addr=${addr},port=${port},server=${server})
+
+file_format: 1
