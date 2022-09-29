@@ -14,6 +14,7 @@ list(
     agc3_cc_python.cc
     agc_cc_python.cc
     agc_ff_python.cc
+    basis_change_python.cc
     cpfsk_bc_python.cc
     cpm_python.cc
     ctcss_squelch_ff_python.cc
