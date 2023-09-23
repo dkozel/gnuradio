@@ -1,6 +1,5 @@
 id: analog_basis_change
 label: Basis Change
-category: '[analog]'
 
 templates:
   imports: import gnuradio.analog as analog
