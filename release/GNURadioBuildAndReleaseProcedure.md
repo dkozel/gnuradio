@@ -1,15 +1,15 @@
 # GNU Radio Build and Runtime Dependencies
 ## Required Packages
 
-|Key:                                     |
--------------------------------------------
-|C: Conan based dep                       |
-|CM: CMake based dep                      |
-|P: python/pip based dep                  |
-|S: system library, dont bundle or install|
+| Key: |
+| --- |
+| C: Conan based dep |
+| CM: CMake based dep |
+| P: python/pip based dep |
+| S: system library, dont bundle or install|
 
 | All platforms | |
-----------------|-----------------|
+| --- | --- |
 | qt/5.15.11 | C |
 | thrift/0.18.1 - built with Python | C |
 | libsndfile/1.2.2 | C |
@@ -31,8 +31,8 @@
 | pybind11.2.11.1 | C |
 | SoapySDR | CM |
 
-|Linux Only | |
-------------|--
+| Linux Only | |
+| --- | --- |
 | ALSA | S |
 | OSS | S |
 | libunwind | S |
@@ -40,31 +40,130 @@
 | libad9361 | S |
 
 | Docs | |
-----------|----
+| --- | --- |
 | Doxygen | C |
 
 ### Installer
 
-Wix (install by hand, ensure candle and light come bundled)
-NSIS (install by hand)
-DragNDrop - available by default on MacOS
-DMG - available by default on MacOS
-Flatpak - install on Linux - experimental (works AFAICT)
+Wix Toolset (install by hand, ensure candle and light come bundled)  
+  https://github.com/wixtoolset/wix/releases/download/v5.0.1/wix-cli-x64.msi
+  
+NSIS (install by hand) (optional, not the primary target)
+  https://nsis.sourceforge.io/Download  
+
+DragNDrop - available by default on MacOS  
+DMG - available by default on MacOS  
+Flatpak - install on Linux - experimental (works AFAICT)  
+
+### Derek's Notes for Windows
+Goal: To produce signed installers from a default Windows 11 environment.
+
+#### Setup Tooling
+1) Install Visual Studio Code
+* Install C++ Extension
+* Install Python Extension
+
+2) Install msvc compiler (v142)  
+https://aka.ms/vs/17/release/vs_BuildTools.exe
+
+Possibly can fetch directly using winget:  
+`winget install Microsoft.VisualStudio.2022.BuildTools -e --source winget --silent --override "--wait --quiet --add ProductLang En-us --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"`
+
+3) Install Cmake
+https://github.com/Kitware/CMake/releases/download/v3.30.3/cmake-3.30.3-windows-x86_64.msi
+
+4) Install Python 3.12.6 using default settings of Recommended installer
+https://www.python.org/downloads/release/python-3126/
+
+5) Setup python venv (ctrl-shift-p in VSCode)
+
+Confirm that the correct python is being used in the terminal
+`Get-Command python.exe | Format-Table -Autosize`
+
+#### Install and Build Dependencies
+
+1) Install Python dependencies
+
+Need to create a requirements.txt
+```
+python -m pip install -r .\release\win_requirements.txt
+```
+
+2) Install the conan based deps
+Conan deps:
+```
+python -m pip install conan
+conan profile detect
+```
+Profile detect doesn't handle having multiple compiler toolchains installed. Manually alter the profile? How to decide the correct values?
+```
+[settings]
+arch=x86_64
+build_type=Release
+compiler=msvc
+compiler.cppstd=14
+compiler.runtime=dynamic
+compiler.version=194
+os=Windows
+```
+```
+conan install .\release\conanfile.txt --output-folder conandeps
+```
+Had to add "--build=qwt/6.2.0 --build=qt/5.15.11" can pre-built versions be used?
+
+CMakeToolchain option: Forces conan to produce cmake related artifacts
+
+3) Install Gtk using gvsbuild
+
+```
+git clone https://github.com/wingtk/gvsbuild.git
+cd gvsbuild
+python -m pip install .
+```
+
+Install Pycairo and pygobject simultaneously with gtk3 (something about creating correct CMake bindings?)
+```
+gvsbuild build gtk3 pycairo pygobject
+```
+Building pygobject failed with:
+> Couldn't find include 'Gio-2.0.gir' (search path: '['C:/gtk-build/gtk/x64/release/bin/../share/gir-1.0', 'C:\\Users\\derek\\.local\\share\\gir-1.0', 'gir-1.0', 'C:\\gtk-build\\gtk\\x64\\release\\share\\gir-1.0', 'C:\\gtk-build\\gtk\\x64\\release\\share\\gir-1.0']')
+
+ 
+4) CMake built deps:
+run cmake with the deps/CMakeLists.txt
+see boost note below in next section for flag
+
+
+#### Build GNU Radio and Create Installer
+
+1) Build GNU Radio
+Before running cmake after this:
+set CMAKE_PREFIX_PATH=C:\dev\gnu-radio\cmake\conan\build\generators;C:\dev\gnu-radio\deps\uhd\lib\cmake;C:\dev\gnu-radio\deps\volk\lib\cmake;C:\dev\gnu-radio\deps\portaudio\lib\cmake;%CMAKE_PREFIX_PATH%
+
+2) Run CPack
+cpack -G WIX
+cpack -G NSIS
+cpack -G DragNDrop
+cpack -G productbuild (must use this for OOT on macOS!)
+
+3) Signing (optional)
 
 ## Building Notes for deps
 
 ### All CMake deps
+
 From conan - conan toolchain is currently very broken, do not use
 Instead for detection, add the conan generator directory to CMAKE_PREFIX_PATH on the command line
 
 ### libusb
-Required by UHD
-Driven by CMake script
-MSBuild on Windows
-Autotools on MacOS
 
-> &#9432; **Note**
-    **THIS MUST BE THE SAME RUNTIME AS GNU Radio + Boost ARE BUILT WITH**
+Required by UHD  
+Driven by CMake script  
+MSBuild on Windows  
+Autotools on MacOS  
+
+> &#9432; **Note**  
+    **THIS MUST BE THE SAME RUNTIME AS GNU Radio + Boost ARE BUILT WITH**  
     This should be accomplished by running CMake from the appropriate VSDev prompt
 
 ### Boost
@@ -75,13 +174,13 @@ Boost installed by Spack or Conan requires `"-DCMAKE_CXX_FLAGS=-DBOOST_ALL_NO_LI
     This is not required if boost is built with this option
     Currently required with Spack + Conan built Boost
 
-`/EHsc` is specified to allow for Boost's exception handling semantics. Otherwise boost will fail to link
+`/EHsc` is specified to allow for Boost's exception handling semantics. Otherwise boost will fail to link (might not be needed as we aren't using thift, still suppresses some warnings)
 
 Need to be careful of boost dyn lib arguments
 
 Do not let CMake's vendored FindBoost.cmake be the module to detect Boost, it will find the headers installed by conan but not the libs. This results in somewhat confusing linker errors as `${Boost_LIBRARIES}` is defined empty so no boost libs are included in the linker line.
 
-Ensure both conan and cmake are building 64bit release configuration to build GNURadio in same
+Ensure both conan and cmake are building 64bit release configuration to build GNU Radio in same
 
 Remember to specify Boost static libs argument (found in my CMake scripts for UHD)
 
@@ -96,10 +195,10 @@ bundled runtime python deps
 
 ### General Build notes for deps
 
-* CMake based builds need to be in release configuration to link against Conan targets
+* CMake based builds need to be in release configuration to link against Conan targets  
 Spack can be in either configuration, so just be mindful about your variants
 
-* Need to be sure conan profile compiler version matches msvc compiler version picked up by cmake
+* Need to be sure conan profile compiler version matches MSVC compiler version picked up by cmake
 
 ## CMake Variables of consideration for the Windows Wix installer
 
