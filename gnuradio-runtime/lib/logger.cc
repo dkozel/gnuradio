@@ -130,6 +130,8 @@ void logger::set_name(const std::string& name)
     d_logger->set_pattern(logging::default_pattern);
 }
 
+void logger::set_pattern(const std::string& pattern) { d_logger->set_pattern(pattern); }
+
 bool configure_default_loggers(gr::logger_ptr& l,
                                gr::logger_ptr& d,
                                const std::string& name)

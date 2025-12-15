@@ -168,6 +168,9 @@ public:
     const std::string& name() const;
     void set_name(const std::string& name);
 
+    /*! \brief set the logger output pattern */
+    void set_pattern(const std::string& pattern);
+
     /*! \brief inline function, wrapper for TRACE message */
     template <typename... Args>
     inline void trace(format_string_t<Args...> msg, Args&&... args)
